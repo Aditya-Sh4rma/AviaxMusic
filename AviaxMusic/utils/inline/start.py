@@ -1,8 +1,6 @@
 from pyrogram.types import InlineKeyboardButton
-
 import config
 from AviaxMusic import app
-
 
 def start_panel(_):
     buttons = [
@@ -14,7 +12,6 @@ def start_panel(_):
         ],
     ]
     return buttons
-
 
 def private_panel(_):
     buttons = [
