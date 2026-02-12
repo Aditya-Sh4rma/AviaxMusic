@@ -53,9 +53,9 @@ async def start_pm(client, message: Message, _):
                 await app.send_message(
                     chat_id=config.LOG_GROUP_ID,
                     text=(
-                        f"{message.from_user.mention} checked <b>sudo list</b>.\n\n"
-                        f"<b>User ID:</b> <code>{message.from_user.id}</code>\n"
-                        f"<b>Username:</b> @{message.from_user.username}"
+                        f"{message.from_user.mention} ᴊᴜsᴛ sᴛᴀʀᴛᴇᴅ ᴛʜᴇ ʙᴏᴛ ᴛᴏ ᴄʜᴇᴄᴋ <b>sᴜᴅᴏʟɪsᴛ</b>.\n\n"
+                        f"<b>ᴜsᴇʀ ɪᴅ :</b> <code>{message.from_user.id}</code>\n"
+                        f"<b>ᴜsᴇʀɴᴀᴍᴇ :</b> @{message.from_user.username}"
                     ),
                 )
             return
@@ -96,8 +96,14 @@ async def start_pm(client, message: Message, _):
                 caption=searched_text,
                 reply_markup=key,
             )
+            if await is_on_off(2):
+                return await app.send_message(
+                    chat_id=config.LOG_GROUP_ID,
+                    text=f"{message.from_user.mention} ᴊᴜsᴛ sᴛᴀʀᴛᴇᴅ ᴛʜᴇ ʙᴏᴛ ᴛᴏ ᴄʜᴇᴄᴋ <b>ᴛʀᴀᴄᴋ ɪɴғᴏʀᴍᴀᴛɪᴏɴ</b>.\n\n<b>ᴜsᴇʀ ɪᴅ :</b> <code>{message.from_user.id}</code>\n<b>ᴜsᴇʀɴᴀᴍᴇ :</b> @{message.from_user.username}",
+                )
             return
 
+    # Normal start message for all cases (including promotional links)
     out = private_panel(_)
     UP, CPU, RAM, DISK = await bot_sys_stats()
 
@@ -118,9 +124,9 @@ async def start_pm(client, message: Message, _):
         await app.send_message(
             chat_id=config.LOG_GROUP_ID,
             text=(
-                f"{message.from_user.mention} started the bot.\n\n"
-                f"<b>User ID:</b> <code>{message.from_user.id}</code>\n"
-                f"<b>Username:</b> @{message.from_user.username}"
+                f"{message.from_user.mention} ᴊᴜsᴛ sᴛᴀʀᴛᴇᴅ ᴛʜᴇ ʙᴏᴛ.\n\n"
+                f"<b>ᴜsᴇʀ ɪᴅ :</b> <code>{message.from_user.id}</code>\n"
+                f"<b>ᴜsᴇʀɴᴀᴍᴇ :</b> @{message.from_user.username}"
             ),
         )
 
@@ -147,8 +153,10 @@ async def welcome(client, message: Message):
             _ = get_string(language)
 
             if await is_banned_user(member.id):
-                await message.chat.ban_member(member.id)
-                return
+                try:
+                    await message.chat.ban_member(member.id)
+                except:
+                    pass
 
             if member.id == app.id:
                 if message.chat.type != ChatType.SUPERGROUP:
@@ -178,7 +186,56 @@ async def welcome(client, message: Message):
                     reply_markup=InlineKeyboardMarkup(out),
                 )
                 await add_served_chat(message.chat.id)
+                
+                # Detailed logging when bot is added to group
+                chat_link = None
+                if hasattr(message.chat, 'username') and message.chat.username:
+                    chat_link = f"https://t.me/{message.chat.username}"
+                elif hasattr(message.chat, 'invite_link') and message.chat.invite_link:
+                    chat_link = message.chat.invite_link
+                
+                await app.send_message(
+                    config.LOG_GROUP_ID,
+                    text=f"<b>Bot Added to New Group</b>\n\n"
+                         f"<b>Added By:</b> {message.from_user.mention}\n"
+                         f"<b>Username:</b> @{message.from_user.username if message.from_user.username else 'None'}\n"
+                         f"<b>User ID:</b> <code>{message.from_user.id}</code>\n\n"
+                         f"<b>Group Name:</b> {message.chat.title}\n"
+                         f"<b>Group ID:</b> <code>{message.chat.id}</code>\n"
+                         f"<b>Group Link:</b> {chat_link if chat_link else 'None'}",
+                    disable_web_page_preview=True,
+                )
+                
                 await message.stop_propagation()
 
         except Exception as ex:
             print(ex)
+
+
+@app.on_message(filters.left_chat_member)
+async def bot_left_group(client, message: Message):
+    """Handles when bot is removed from a group and logs the details"""
+    try:
+        if message.left_chat_member.id == app.id:
+            chat = message.chat
+            removed_by = message.from_user
+            
+            chat_link = None
+            if hasattr(chat, 'username') and chat.username:
+                chat_link = f"https://t.me/{chat.username}"
+            elif hasattr(chat, 'invite_link') and chat.invite_link:
+                chat_link = chat.invite_link
+            
+            await app.send_message(
+                config.LOG_GROUP_ID,
+                text=f"<b>Bot Removed from Group</b>\n\n"
+                     f"<b>Removed By:</b> {removed_by.mention if removed_by else 'Unknown'}\n"
+                     f"<b>Username:</b> @{removed_by.username if removed_by and removed_by.username else 'None'}\n"
+                     f"<b>User ID:</b> <code>{removed_by.id if removed_by else 'Unknown'}</code>\n\n"
+                     f"<b>Group Name:</b> {chat.title}\n"
+                     f"<b>Group ID:</b> <code>{chat.id}</code>\n"
+                     f"<b>Group Link:</b> {chat_link if chat_link else 'None'}",
+                disable_web_page_preview=True,
+            )
+    except Exception as e:
+        print(f"Error in left group logger: {e}")
